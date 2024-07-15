@@ -22,13 +22,11 @@ public final class DiamondShop extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        // Plugin startup logic
         getServer().getPluginManager().registerEvents(this, this);
     }
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
     }
 
     @EventHandler
@@ -94,7 +92,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
     private boolean replaceItemInChest(Sign sign, int number, Player player) {
         BlockData blockData = sign.getBlockData();
         if (!(blockData instanceof Directional)) {
-            return false; // Not a directional block
+            return false;
         }
 
         Directional directional = (Directional) blockData;
@@ -107,33 +105,30 @@ public final class DiamondShop extends JavaPlugin implements Listener {
         Chest chest = (Chest) chestBlock.getState();
         Inventory chestInventory = chest.getInventory();
 
-        // Get the item type and amount from lines[1]
         String[] itemDetails = sign.getLine(1).split(" ");
         if (itemDetails.length < 2) {
-            return false; // Incorrect format
+            return false;
         }
 
         Material itemType = Material.getMaterial(itemDetails[1].toUpperCase());
         if (itemType == null) {
             player.sendMessage("Out of stock.");
-            return false; // Invalid item type
+            return false;
         }
 
         int itemAmount;
         try {
             itemAmount = Integer.parseInt(itemDetails[0]);
         } catch (NumberFormatException e) {
-            return false; // Invalid number format
+            return false;
         }
 
         for (int i = 0; i < chestInventory.getSize(); i++) {
             ItemStack item = chestInventory.getItem(i);
             if (item != null && item.getType() == itemType && item.getAmount() >= itemAmount) {
-                // Replace with diamonds
                 item.setAmount(item.getAmount() - itemAmount);
                 chestInventory.setItem(i, item);
 
-                // Add diamonds to the player's inventory
                 ItemStack diamonds = new ItemStack(itemType, itemAmount);
                 addItemToPlayerInventory(player, diamonds);
                 player.getItemInHand().setAmount(player.getItemInHand().getAmount() - number);
@@ -141,7 +136,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
 
             }
         }
-        return false; // No matching item found
+        return false;
     }
     private void addItemToPlayerInventory(Player player, ItemStack item) {
         Inventory playerInventory = player.getInventory();
@@ -154,3 +149,4 @@ public final class DiamondShop extends JavaPlugin implements Listener {
         }
     }
 }
+//Made by WizarTheGreat
