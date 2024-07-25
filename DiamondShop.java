@@ -11,6 +11,7 @@ import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -30,7 +31,34 @@ public final class DiamondShop extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void onExplosionPrime(ExplosionPrimeEvent e) {
+        Block block = e.getEntity().getLocation().getBlock();
+        Material type = Objects.requireNonNull(e.getEntity().getLocation().getBlock().getType());
+        if (type.toString().contains("SIGN")) {
+            Sign sign = (Sign) block.getState();
+            String[] lines = sign.getLines();
+            if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
+                e.setCancelled(true);
+            }
+        } else if (type == (Material.CHEST)) {
+            BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
+            for (BlockFace face : faces) {
+                Block relativeBlock = block.getRelative(face);
+                if (relativeBlock.getState() instanceof Sign) {
+                    Sign sign = (Sign) relativeBlock.getState();
+                    String[] lines = sign.getLines();
+                    if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
+                        e.setCancelled(true);
+                    }
+                }
+            }
+        }
+    }
+    @EventHandler
     public void interact(PlayerInteractEvent e) {
+        if (e.getClickedBlock() == null) {
+            return;
+        }
         Material type = Objects.requireNonNull(e.getClickedBlock()).getType();
         Player player = e.getPlayer();
         ItemStack item = e.getItem();
@@ -126,8 +154,9 @@ public final class DiamondShop extends JavaPlugin implements Listener {
         for (int i = 0; i < chestInventory.getSize(); i++) {
             ItemStack item = chestInventory.getItem(i);
             if (item != null && item.getType() == itemType && item.getAmount() >= itemAmount) {
+                ItemStack diamond = new ItemStack(Material.DIAMOND, number);
                 item.setAmount(item.getAmount() - itemAmount);
-                chestInventory.setItem(i, item);
+                chestInventory.setItem(i, diamond);
 
                 ItemStack diamonds = new ItemStack(itemType, itemAmount);
                 addItemToPlayerInventory(player, diamonds);
