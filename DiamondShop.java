@@ -11,12 +11,14 @@ import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Iterator;
 import java.util.Objects;
 
 public final class DiamondShop extends JavaPlugin implements Listener {
@@ -31,24 +33,28 @@ public final class DiamondShop extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void onExplosionPrime(ExplosionPrimeEvent e) {
-        Block block = e.getEntity().getLocation().getBlock();
-        Material type = Objects.requireNonNull(e.getEntity().getLocation().getBlock().getType());
-        if (type.toString().contains("SIGN")) {
-            Sign sign = (Sign) block.getState();
-            String[] lines = sign.getLines();
-            if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
-                e.setCancelled(true);
-            }
-        } else if (type == (Material.CHEST)) {
-            BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
-            for (BlockFace face : faces) {
-                Block relativeBlock = block.getRelative(face);
-                if (relativeBlock.getState() instanceof Sign) {
-                    Sign sign = (Sign) relativeBlock.getState();
-                    String[] lines = sign.getLines();
-                    if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
-                        e.setCancelled(true);
+    public void onEntityExplode(EntityExplodeEvent e) {
+        Iterator<Block> iterator = e.blockList().iterator();
+        while (iterator.hasNext()) {
+            Block block = iterator.next();
+            Material type = block.getType();
+            if (type.toString().contains("SIGN")) {
+                Sign sign = (Sign) block.getState();
+                String[] lines = sign.getLines();
+                if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
+                    iterator.remove();
+                }
+            } else if (type == Material.CHEST) {
+                BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
+                for (BlockFace face : faces) {
+                    Block relativeBlock = block.getRelative(face);
+                    if (relativeBlock.getState() instanceof Sign) {
+                        Sign sign = (Sign) relativeBlock.getState();
+                        String[] lines = sign.getLines();
+                        if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
+                            iterator.remove();
+                            break;
+                        }
                     }
                 }
             }
