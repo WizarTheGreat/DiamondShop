@@ -80,7 +80,6 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                                 player.sendMessage("You bought the items.");
                                 e.setCancelled(true);
                             } else {
-                                player.sendMessage("Out of items.");
                                 e.setCancelled(true);
                             }
                         } else {
@@ -145,32 +144,33 @@ public final class DiamondShop extends JavaPlugin implements Listener {
         }
 
         Material itemType = Material.getMaterial(itemDetails[1].toUpperCase());
-        if (itemType == null) {
+        String itemName = itemDetails[1].toUpperCase();
+        getLogger().info( " " + itemName);
+        if (itemType == null && !(itemName.length() > 10)) {
             player.sendMessage("Out of stock.");
             return false;
         }
-
-        int itemAmount;
-        try {
-            itemAmount = Integer.parseInt(itemDetails[0]);
-        } catch (NumberFormatException e) {
-            return false;
-        }
+        int itemAmount = Integer.parseInt(itemDetails[0]);
 
         for (int i = 0; i < chestInventory.getSize(); i++) {
             ItemStack item = chestInventory.getItem(i);
-            if (item != null && item.getType() == itemType && item.getAmount() >= itemAmount) {
-                ItemStack diamond = new ItemStack(Material.DIAMOND, number);
+            if (item != null && (item.getType() == itemType || item.getType().toString().contains(itemName)) && item.getAmount() == itemAmount) {
+                if (item.getType().toString().contains(itemName)){
+                    itemType = item.getType();
+                }else{
+                    player.sendMessage("Out of stock!");
+                    return false;
+                }
+                ItemStack diamond = new ItemStack(Material.DIAMOND, number);;
                 item.setAmount(item.getAmount() - itemAmount);
                 chestInventory.setItem(i, diamond);
 
-                ItemStack diamonds = new ItemStack(itemType, itemAmount);
-                addItemToPlayerInventory(player, diamonds);
+                ItemStack sale = new ItemStack(itemType, itemAmount);
+                addItemToPlayerInventory(player, sale);
                 player.getItemInHand().setAmount(player.getItemInHand().getAmount() - number);
                 return true;
-
+                }
             }
-        }
         return false;
     }
     private void addItemToPlayerInventory(Player player, ItemStack item) {
