@@ -1,5 +1,4 @@
 package plugin.diamondshop;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -12,7 +11,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -22,7 +20,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 public final class DiamondShop extends JavaPlugin implements Listener {
-
+    private boolean isThere;
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
@@ -74,7 +72,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
             if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
                 try {
                     int number = Integer.parseInt(lines[2].split(" ")[0]);
-                    if (!lines[3].equalsIgnoreCase(player.getName())) {
+                    if (!(Objects.requireNonNull(Bukkit.getOfflinePlayer(lines[3])).getUniqueId() == Objects.requireNonNull(player.getUniqueId()))) {
                         if (removeDiamonds(number, item)) {
                             if (replaceItemInChest(sign, number, e.getPlayer())) {
                                 player.sendMessage("You bought the items.");
@@ -87,7 +85,8 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                             e.setCancelled(true);
                         }
                     }
-                    if (lines[3].equalsIgnoreCase(player.getName())) {
+
+                    if (Objects.requireNonNull(Bukkit.getOfflinePlayer(lines[3])).getUniqueId() == Objects.requireNonNull(player.getUniqueId())) {
                         if (e.getAction().toString().contains("RIGHT_CLICK")) {
                             player.sendMessage("Shop was made successfully.");
                             e.setCancelled(true);
@@ -105,7 +104,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                     Sign sign = (Sign) relativeBlock.getState();
                     String[] lines = sign.getLines();
                     if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
-                        if (!lines[3].equalsIgnoreCase(player.getName())) {
+                        if ((!(Objects.requireNonNull(Bukkit.getOfflinePlayer(lines[3])).getUniqueId() == Objects.requireNonNull(player.getUniqueId())))) {
                             player.sendMessage("This isn't your shop!");
                             e.setCancelled(true);
                         }
@@ -145,9 +144,8 @@ public final class DiamondShop extends JavaPlugin implements Listener {
 
         Material itemType = Material.getMaterial(itemDetails[1].toUpperCase());
         String itemName = itemDetails[1].toUpperCase();
-        getLogger().info( " " + itemName);
         if (itemType == null && !(itemName.length() > 10)) {
-            player.sendMessage("Out of stock.");
+            player.sendMessage("Not a sellable item.");
             return false;
         }
         int itemAmount = Integer.parseInt(itemDetails[0]);
@@ -157,9 +155,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
             if (item != null && (item.getType() == itemType || item.getType().toString().contains(itemName)) && item.getAmount() == itemAmount) {
                 if (item.getType().toString().contains(itemName)){
                     itemType = item.getType();
-                }else{
-                    player.sendMessage("Out of stock!");
-                    return false;
+                    isThere = true;
                 }
                 ItemStack diamond = new ItemStack(Material.DIAMOND, number);;
                 item.setAmount(item.getAmount() - itemAmount);
@@ -171,6 +167,11 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                 return true;
                 }
             }
+        if (isThere){
+            isThere = false;
+        }else{
+            player.sendMessage("This shop is out of stock!");
+        }
         return false;
     }
     private void addItemToPlayerInventory(Player player, ItemStack item) {
