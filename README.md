@@ -3,6 +3,8 @@ A simple Spigot plugin to allow for chest-based diamond shops!
 
 On a sign placed on a chest write
 
+
+
 Shop
 
 (number) (selling material)
@@ -10,6 +12,8 @@ Shop
 (number) (diamond/diamonds)
 
 (name of shop owner)
+
+
 
 Just right click the sign with diamonds in your hand to buy!
 
