@@ -11,6 +11,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -21,9 +23,16 @@ import java.util.Objects;
 
 public final class DiamondShop extends JavaPlugin implements Listener {
     private boolean isThere;
+    private boolean open;
+    private int stacks;
+    private int count;
+    private int openSlots;
+    private boolean enough;
+
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
+        openSlots = 0;
     }
 
     @Override
@@ -56,6 +65,23 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                     }
                 }
             }
+        }
+    }
+    @EventHandler
+    public void onHopper(InventoryMoveItemEvent e){
+        if(e.getSource().getType().equals(InventoryType.CHEST)){
+            BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
+            for (BlockFace face : faces) {
+                Block relativeBlock = Objects.requireNonNull(e.getSource().getLocation()).getBlock().getRelative(face);
+                if (relativeBlock.getState() instanceof Sign) {
+                    Sign sign = (Sign) relativeBlock.getState();
+                    String[] lines = sign.getLines();
+                    if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
+                            e.setCancelled(true);
+                    }
+                }
+            }
+
         }
     }
     @EventHandler
@@ -121,6 +147,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
         }
         return false;
     }
+
     private boolean replaceItemInChest(Sign sign, int number, Player player) {
         BlockData blockData = sign.getBlockData();
         if (!(blockData instanceof Directional)) {
@@ -148,41 +175,84 @@ public final class DiamondShop extends JavaPlugin implements Listener {
             player.sendMessage("Not a sellable item.");
             return false;
         }
+
         int itemAmount = Integer.parseInt(itemDetails[0]);
 
-        for (int i = 0; i < chestInventory.getSize(); i++) {
-            ItemStack item = chestInventory.getItem(i);
-            if (item != null && (item.getType() == itemType || item.getType().toString().contains(itemName)) && item.getAmount() == itemAmount) {
-                if (item.getType().toString().contains(itemName)){
-                    itemType = item.getType();
-                    isThere = true;
-                }
-                ItemStack diamond = new ItemStack(Material.DIAMOND, number);;
-                item.setAmount(item.getAmount() - itemAmount);
-                chestInventory.setItem(i, diamond);
-
-                ItemStack sale = new ItemStack(itemType, itemAmount);
-                addItemToPlayerInventory(player, sale);
-                player.getItemInHand().setAmount(player.getItemInHand().getAmount() - number);
-                return true;
-                }
+        if (itemAmount >= 64) {
+            stacks = ((int) Math.floor((double) itemAmount / 64));
+            itemAmount = itemAmount - (stacks * 64);
+        }
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null) {
+                openSlots++;
             }
-        if (isThere){
-            isThere = false;
-        }else{
-            player.sendMessage("This shop is out of stock!");
         }
-        return false;
-    }
-    private void addItemToPlayerInventory(Player player, ItemStack item) {
-        Inventory playerInventory = player.getInventory();
-        ItemStack firstSlotItem = playerInventory.getItem(0);
+        if (openSlots >= 1 + stacks) {
+            open = true;
+        }
+            if (open) {
+                for (int i = 0; i < chestInventory.getSize(); i++) {
+                    ItemStack item = chestInventory.getItem(i);
+                    if (item != null && (item.getType() == itemType || item.getType().toString().contains(itemName))) {
+                        if (item.getAmount() == 64) {
+                            count++;
+                            isThere = true;
+                        } else if ((item.getAmount() == itemAmount || itemAmount == 0) && stacks <= count && stacks > 0) {
+                            enough = true;
+                            isThere = true;
+                            ItemStack diamonds = new ItemStack(Material.DIAMOND, number);
+                            item.setAmount(0);
+                            chestInventory.setItem(i, diamonds);
+                            ItemStack sale = new ItemStack(itemType, itemAmount);
+                            addItemToPlayerInventory(player, sale);
+                            player.getItemInHand().setAmount(player.getItemInHand().getAmount() - number);
+                            break;
+                        }
+                    }
+                }
+                if(enough) {
+                    for (int i = 0; i < chestInventory.getSize(); i++) {
+                        ItemStack item = chestInventory.getItem(i);
+                        if (stacks > 0 && count >= stacks) {
+                            if (item != null && (item.getType() == itemType || item.getType().toString().contains(itemName)) && item.getAmount() == 64) {
+                                item.setAmount(0);
+                                stacks--;
+                                ItemStack full = new ItemStack(itemType, 64);
+                                addItemToPlayerInventory(player, full);
 
-        if (firstSlotItem == null || firstSlotItem.getType() == Material.AIR) {
-            playerInventory.setItem(0, item);
-        } else {
-            player.getInventory().addItem(item);
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }else{
+                    isThere = false;
+                }
+                if (isThere) {
+                    isThere = false;
+                    return true;
+                } else {
+                    player.sendMessage("This shop is out of stock!");
+                }
+                open = false;
+                stacks = 0;
+                count = 0;
+                return false;
+            } else {
+                player.sendMessage("Your inventory is full.");
+            }
+            return false;
+
+        }
+        private void addItemToPlayerInventory (Player player, ItemStack item){
+            Inventory playerInventory = player.getInventory();
+            ItemStack firstSlotItem = playerInventory.getItem(0);
+
+            if (firstSlotItem == null || firstSlotItem.getType() == Material.AIR) {
+                playerInventory.setItem(0, item);
+            } else {
+                player.getInventory().addItem(item);
+            }
         }
     }
-}
 //Made by WizarTheGreat
