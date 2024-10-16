@@ -166,13 +166,14 @@ public final class DiamondShop extends JavaPlugin implements Listener {
 
         String[] itemDetails = sign.getLine(1).split(" ");
         if (itemDetails.length < 2) {
+            player.sendMessage("Improper format! Need number then item.");
             return false;
         }
 
         Material itemType = Material.getMaterial(itemDetails[1].toUpperCase());
         String itemName = itemDetails[1].toUpperCase();
         if (itemType == null && !(itemName.length() > 10)) {
-            player.sendMessage("Not a sellable item.");
+            player.sendMessage("This isn't a sellable item.");
             return false;
         }
 
@@ -187,7 +188,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                 openSlots++;
             }
         }
-        if (openSlots >= 1 + stacks) {
+        if (openSlots >= 1 + stacks || ((openSlots == stacks) && (itemAmount == 0))){
             open = true;
         }
             if (open) {
@@ -239,7 +240,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                 count = 0;
                 return false;
             } else {
-                player.sendMessage("Your inventory is full.");
+                player.sendMessage("You don't have enough space.");
             }
             return false;
 
