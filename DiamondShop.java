@@ -188,7 +188,8 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                 openSlots++;
             }
         }
-        if (openSlots >= 1 + stacks || ((openSlots == stacks) && (itemAmount == 0))){
+
+        if (openSlots >= 1 + stacks){
             open = true;
         }
             if (open) {
@@ -198,7 +199,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                         if (item.getAmount() == 64) {
                             count++;
                             isThere = true;
-                        } else if ((item.getAmount() == itemAmount || itemAmount == 0) && stacks <= count && stacks > 0) {
+                        } else if ((item.getAmount() == itemAmount || itemAmount == 0) && stacks <= count) {
                             enough = true;
                             isThere = true;
                             ItemStack diamonds = new ItemStack(Material.DIAMOND, number);
@@ -235,9 +236,11 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                 } else {
                     player.sendMessage("This shop is out of stock!");
                 }
+
                 open = false;
                 stacks = 0;
                 count = 0;
+                openSlots = 0;
                 return false;
             } else {
                 player.sendMessage("You don't have enough space.");
