@@ -29,6 +29,9 @@ public final class DiamondShop extends JavaPlugin implements Listener {
     private int openSlots;
     private boolean enough;
 
+
+
+
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
@@ -202,17 +205,19 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                         } else if ((item.getAmount() == itemAmount || itemAmount == 0) && stacks <= count) {
                             enough = true;
                             isThere = true;
-                            ItemStack diamonds = new ItemStack(Material.DIAMOND, number);
-                            item.setAmount(0);
-                            chestInventory.setItem(i, diamonds);
-                            ItemStack sale = new ItemStack(itemType, itemAmount);
-                            addItemToPlayerInventory(player, sale);
-                            player.getItemInHand().setAmount(player.getItemInHand().getAmount() - number);
+                            if (itemAmount > 0) {
+                                item.setAmount(0);
+                                ItemStack sale = new ItemStack(itemType, itemAmount);
+                                addItemToPlayerInventory(player, sale);
+                            }
                             break;
                         }
                     }
                 }
                 if(enough) {
+                    ItemStack diamonds = new ItemStack(Material.DIAMOND, number);
+                    player.getItemInHand().setAmount(player.getItemInHand().getAmount() - number);
+                    chestInventory.addItem(diamonds);
                     for (int i = 0; i < chestInventory.getSize(); i++) {
                         ItemStack item = chestInventory.getItem(i);
                         if (stacks > 0 && count >= stacks) {
