@@ -7,9 +7,12 @@ import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -18,6 +21,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -28,20 +34,87 @@ public final class DiamondShop extends JavaPlugin implements Listener {
     private int count;
     private int openSlots;
     private boolean enough;
-
+    private int MaxShops = getConfig().getInt("MaxShops");
+    private HashMap<String,Integer> Shops = new HashMap<>();
+    private YamlConfiguration cfg;
+    private File shops;
 
 
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
+        reloadConfig();
         getServer().getPluginManager().registerEvents(this, this);
         openSlots = 0;
+        shops = new File(getDataFolder(), "shops.yml");
+        if(!shops.exists()) {
+            try {
+                shops.createNewFile();
+            } catch (IOException e) {
+                getLogger().severe("Could not create shops.yml file!");
+            }
+        }
+        cfg = YamlConfiguration.loadConfiguration(shops);
+        for (String key : cfg.getKeys(false)) {
+            Shops.put(key, cfg.getInt(key));
+        }
     }
 
     @Override
     public void onDisable() {
+        for (String key : Shops.keySet()){
+            cfg.set(key, Shops.get(key));
+        }
+        try {
+            cfg.save(shops);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
+    @EventHandler
+    public void onSignChange(SignChangeEvent e){
+        Player player = e.getPlayer();
+        String[] lines = e.getLines();
 
+
+        if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
+            if (!lines[3].equalsIgnoreCase(player.getName())){
+                e.setCancelled(true);
+                player.sendMessage("You cannot create a shop for someone else.");
+            }else  if (Shops.containsKey(player.getName())) {
+                Integer value = Shops.get(player.getName());
+                if (value == MaxShops){
+                    e.setCancelled(true);
+                    player.sendMessage("You are already maxed out on shops!");
+                } else{
+                getLogger().info("playername");
+                    Shops.replace(player.getName(), value + 1);
+                    player.sendMessage(String.valueOf(Shops.get(player.getName())));
+                }
+            }else {
+                Shops.put(player.getName(), 1);
+                player.sendMessage("You are at 1/" + MaxShops + " shops");
+        }
+        }
+    }
+    @EventHandler
+    public void onBreak(BlockBreakEvent e) {
+        Block block = e.getBlock();
+        Material type = block.getBlockData().getMaterial();
+        if (type.toString().contains("SIGN")) {
+            Sign sign = (Sign) block.getState();
+            String[] lines = sign.getLines();
+            if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
+                if(Shops.containsKey(lines[3])){
+                    Shops.replace(lines[3],Shops.get(lines[3]) - 1);
+                    if (e.getPlayer().getUniqueId() == Bukkit.getOfflinePlayer(lines[3]).getUniqueId()){
+                        e.getPlayer().sendMessage("You are now at " + Shops.get(e.getPlayer().getName()) + "/" + MaxShops + "shops");
+                    }
+                }
+            }
+        }
+    }
     @EventHandler
     public void onEntityExplode(EntityExplodeEvent e) {
         Iterator<Block> iterator = e.blockList().iterator();
@@ -215,9 +288,6 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                     }
                 }
                 if(enough) {
-                    ItemStack diamonds = new ItemStack(Material.DIAMOND, number);
-                    player.getItemInHand().setAmount(player.getItemInHand().getAmount() - number);
-                    chestInventory.addItem(diamonds);
                     for (int i = 0; i < chestInventory.getSize(); i++) {
                         ItemStack item = chestInventory.getItem(i);
                         if (stacks > 0 && count >= stacks) {
@@ -232,6 +302,9 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                             break;
                         }
                     }
+                    ItemStack diamonds = new ItemStack(Material.DIAMOND, number);
+                    player.getItemInHand().setAmount(player.getItemInHand().getAmount() - number);
+                    chestInventory.addItem(diamonds);
                 }else{
                     isThere = false;
                 }
