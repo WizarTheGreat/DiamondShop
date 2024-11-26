@@ -3,8 +3,6 @@ A simple Spigot plugin to allow for chest-based diamond shops!
 
 On a sign placed on a chest write
 
-
-
 Shop
 
 (number) (selling material)
@@ -25,4 +23,9 @@ If an item doesn't fit the name, put as much as you can and it will search for t
 
 EX = Firework_Rock for Firework_Rocket
 
-If you have any issues, leave here in the github! (Preferably with screenshots or a video replicating the event)
+Please leave any issues in the github!
+
+To increase the max shop limit, go to the config.yml
+
+Set it to 0 to have infinite shops
+
