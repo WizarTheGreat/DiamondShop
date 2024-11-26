@@ -78,7 +78,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
         String[] lines = e.getLines();
 
 
-        if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
+        if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds")) && MaxShops > 0) {
             if (!lines[3].equalsIgnoreCase(player.getName())){
                 e.setCancelled(true);
                 player.sendMessage("You cannot create a shop for someone else.");
@@ -90,7 +90,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                 } else{
                 getLogger().info("playername");
                     Shops.replace(player.getName(), value + 1);
-                    player.sendMessage(String.valueOf(Shops.get(player.getName())));
+                    player.sendMessage("You are now at " + Shops.get(player.getName() + "/" + MaxShops + "shops"));
                 }
             }else {
                 Shops.put(player.getName(), 1);
@@ -102,7 +102,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
     public void onBreak(BlockBreakEvent e) {
         Block block = e.getBlock();
         Material type = block.getBlockData().getMaterial();
-        if (type.toString().contains("SIGN")) {
+        if (type.toString().contains("SIGN") && MaxShops > 0) {
             Sign sign = (Sign) block.getState();
             String[] lines = sign.getLines();
             if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
