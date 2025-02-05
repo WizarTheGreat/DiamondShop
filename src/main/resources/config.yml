@@ -1,0 +1,3 @@
+#Max amount of shops a player can have
+#Set to -1 to have infinite
+MaxShops: 20

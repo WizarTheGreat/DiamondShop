@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="DiamondShop">
+    <output-path>$PROJECT_DIR$/out/artifacts/DiamondShop</output-path>
+    <root id="archive" name="DiamondShop.jar">
+      <element id="module-output" name="DiamondShop" />
+    </root>
+  </artifact>
+</component>
