@@ -88,7 +88,6 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                     e.setCancelled(true);
                     player.sendMessage("You are already maxed out on shops!");
                 } else{
-                getLogger().info("playername");
                     Shops.replace(player.getName(), value + 1);
                     player.sendMessage("You are now at " + Shops.get(player.getName() + "/" + MaxShops + "shops"));
                 }
@@ -183,7 +182,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                                 e.setCancelled(true);
                             }
                         } else {
-                            player.sendMessage("You do not have enough diamonds in your hand!");
+                            player.sendMessage("§4You do not have enough diamonds in your hand!");
                             e.setCancelled(true);
                         }
                     }
@@ -195,7 +194,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                         }
                     }
                 } catch (NumberFormatException ex) {
-                    player.sendMessage("The sign format is incorrect!");
+                    player.sendMessage("§4The sign format is incorrect!");
                 }
             }
         } else if (type == (Material.CHEST)) {
@@ -207,7 +206,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                     String[] lines = sign.getLines();
                     if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
                         if ((!(Objects.requireNonNull(Bukkit.getOfflinePlayer(lines[3])).getUniqueId() == Objects.requireNonNull(player.getUniqueId())))) {
-                            player.sendMessage("This isn't your shop!");
+                            player.sendMessage("§4This isn't your shop!");
                             e.setCancelled(true);
                         }
                     }
@@ -242,14 +241,14 @@ public final class DiamondShop extends JavaPlugin implements Listener {
 
         String[] itemDetails = sign.getLine(1).split(" ");
         if (itemDetails.length < 2) {
-            player.sendMessage("Improper format! Need number then item.");
+            player.sendMessage("§4Improper format! Need number then item.");
             return false;
         }
 
         Material itemType = Material.getMaterial(itemDetails[1].toUpperCase());
         String itemName = itemDetails[1].toUpperCase();
         if (itemType == null && !(itemName.length() > 10)) {
-            player.sendMessage("This isn't a sellable item.");
+            player.sendMessage("§4This isn't a sellable item.");
             return false;
         }
 
@@ -312,16 +311,16 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                     isThere = false;
                     return true;
                 } else {
-                    player.sendMessage("This shop is out of stock!");
+                    player.sendMessage("§4This shop is out of stock!");
                 }
-
+                enough = false;
                 open = false;
                 stacks = 0;
                 count = 0;
                 openSlots = 0;
                 return false;
             } else {
-                player.sendMessage("You don't have enough space.");
+                player.sendMessage("§4You don't have enough space.");
             }
             return false;
 

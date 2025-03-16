@@ -1,5 +1,5 @@
 name: DiamondShop
-version: '1.3.5'
+version: '1.3.6'
 main: plugin.diamondshop.DiamondShop
 api-version: '1.13'
 description: A simple spigot plugin for a chest based diamond shop!
