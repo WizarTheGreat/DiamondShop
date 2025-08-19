@@ -104,15 +104,13 @@ public final class DiamondShop extends JavaPlugin implements Listener {
             User user = luckPerms.getUserManager().loadUser(player.getUniqueId()).get();
             String primaryGroup = user.getPrimaryGroup();
             if(!primaryGroup.equals("default")) {
-                int maxShops = getConfig().getInt(primaryGroup);
-                return maxShops;
-            }else
-                return defaultMaxShops;
+                return getConfig().getInt("Groups." + primaryGroup, defaultMaxShops);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             getLogger().warning("COULD NOT RETRIEVE LUCKPERMS, GOING WITH DEFAULT");
-            return defaultMaxShops;
         }
+        return defaultMaxShops;
     }
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
@@ -136,9 +134,10 @@ public final class DiamondShop extends JavaPlugin implements Listener {
     public void onSignChange(SignChangeEvent e) {
         Player player = e.getPlayer();
         String[] lines = e.getLines();
-
+        getLogger().info("sign did change");
 
         if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds")) && defaultMaxShops > 0) {
+            getLogger().info("sign format correct");
             if (!lines[3].equalsIgnoreCase(player.getName())) {
                 e.setCancelled(true);
                 player.sendMessage("You cannot create a shop for someone else.");
@@ -146,6 +145,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                 Integer value = Shops.get(player.getName());
                 //Running with Luckperms
                 if (lp && lpEnabled){
+                    getLogger().info("lp enabled");
                     if (value == getGroupMax(player)) {
                         e.setCancelled(true);
                         player.sendMessage("You are already maxed out on shops!");
@@ -163,7 +163,13 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                         player.sendMessage("You are now at " + Shops.get(player.getName()) + "/" + defaultMaxShops + " shops");
                     }
                 }
-                }
+                }else if(lp && lpEnabled){
+                Shops.put(player.getName(), 1);
+                player.sendMessage("You are now at 1/" + getGroupMax(player) + " shops");
+            }else{
+                Shops.put(player.getName(), 1);
+                player.sendMessage("You are now at 1/" + defaultMaxShops + " shops");
+            }
             }
         }
     @EventHandler

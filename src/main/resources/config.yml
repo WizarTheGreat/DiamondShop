@@ -3,8 +3,7 @@
 MaxShops: 20
 
 #Let this plugin use luckperms groups to decide MaxShops instead
-LuckPermsEnabled: true
-
+LuckPermsEnabled: false
 
 #List out the Luckperms group names, with the MaxShop number afterwards.
 Groups:
