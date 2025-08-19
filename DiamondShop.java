@@ -1,4 +1,5 @@
 package plugin.diamondshop;
+import net.luckperms.api.model.user.User;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -17,6 +18,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,17 +29,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
 
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.LuckPermsProvider;
+
 public final class DiamondShop extends JavaPlugin implements Listener {
     private boolean isThere;
-    private boolean open;
-    private int stacks;
-    private int count;
-    private int openSlots;
-    private boolean enough;
-    private int MaxShops = getConfig().getInt("MaxShops");
+    int defaultMaxShops = getConfig().getInt("MaxShops");
+    private boolean lpEnabled;
     private HashMap<String,Integer> Shops = new HashMap<>();
     private YamlConfiguration cfg;
     private File shops;
+    private boolean lp;
 
 
 
@@ -46,7 +48,8 @@ public final class DiamondShop extends JavaPlugin implements Listener {
         saveDefaultConfig();
         reloadConfig();
         getServer().getPluginManager().registerEvents(this, this);
-        openSlots = 0;
+
+        lpEnabled = getConfig().getBoolean("LuckPermsEnabled");
         shops = new File(getDataFolder(), "shops.yml");
         if(!shops.exists()) {
             try {
@@ -59,6 +62,29 @@ public final class DiamondShop extends JavaPlugin implements Listener {
         for (String key : cfg.getKeys(false)) {
             Shops.put(key, cfg.getInt(key));
         }
+        Objects.requireNonNull(getCommand("diamondshop")).setExecutor(new Commands());
+
+        if (Bukkit.getPluginManager().getPlugin("LuckPerms") != null) {
+            lp = true;
+        } else {
+            getLogger().info("LuckPerms not found, going with default configuration.");
+        }
+        if (lp && lpEnabled){
+            getLogger().warning("Luckperms integration with DiamondShop is an experimental feature. If any issues arise, please report them at https://github.com/WizarTheGreat/DiamondShop/issues");
+        }
+
+        int resourceId = 118064;
+        UpdateChecker checker = new UpdateChecker(this, resourceId);
+        String currentVersion = getDescription().getVersion();
+        checker.checkForUpdate((latestVersion) -> {
+            if (latestVersion != null && !latestVersion.equalsIgnoreCase(getDescription().getVersion())) {
+                getLogger().warning("=================================");
+                getLogger().warning("A new version of DiamondShop is available!");
+                getLogger().warning("Current: " + currentVersion + " | Latest: " + latestVersion);
+                getLogger().warning("Download it from: https://www.spigotmc.org/resources/" + resourceId);
+                getLogger().warning("=================================");
+            }
+        });
     }
 
     @Override
@@ -72,45 +98,98 @@ public final class DiamondShop extends JavaPlugin implements Listener {
             throw new RuntimeException(e);
         }
     }
-    @EventHandler
-    public void onSignChange(SignChangeEvent e){
-        Player player = e.getPlayer();
-        String[] lines = e.getLines();
-
-
-        if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds")) && MaxShops > 0) {
-            if (!lines[3].equalsIgnoreCase(player.getName())){
-                e.setCancelled(true);
-                player.sendMessage("You cannot create a shop for someone else.");
-            }else  if (Shops.containsKey(player.getName())) {
-                Integer value = Shops.get(player.getName());
-                if (value == MaxShops){
-                    e.setCancelled(true);
-                    player.sendMessage("You are already maxed out on shops!");
-                } else{
-                getLogger().info("playername");
-                    Shops.replace(player.getName(), value + 1);
-                    player.sendMessage("You are now at " + Shops.get(player.getName() + "/" + MaxShops + "shops"));
-                }
-            }else {
-                Shops.put(player.getName(), 1);
-                player.sendMessage("You are at 1/" + MaxShops + " shops");
+    public int getGroupMax(Player player) {
+        LuckPerms luckPerms = LuckPermsProvider.get();
+        try {
+            User user = luckPerms.getUserManager().loadUser(player.getUniqueId()).get();
+            String primaryGroup = user.getPrimaryGroup();
+            if(!primaryGroup.equals("default")) {
+                return getConfig().getInt("Groups." + primaryGroup, defaultMaxShops);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            getLogger().warning("COULD NOT RETRIEVE LUCKPERMS, GOING WITH DEFAULT");
         }
+        return defaultMaxShops;
+    }
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        UpdateChecker checker = new UpdateChecker(this, 118064);
+        if(player.isOp()) {
+            checker.checkForUpdate((latestVersion) -> {
+                if (latestVersion != null && !latestVersion.equalsIgnoreCase(getDescription().getVersion())) {
+                    player.sendMessage("§cYour version of diamondshop is outdated!");
+                    player.sendMessage("§cA new version is available: " + latestVersion);
+                    player.sendMessage("§cDownload it here: https://www.spigotmc.org/resources/118064");
+                }
+
+            });
+            if(lp && lpEnabled){
+                player.sendMessage("Luckperms integration with DiamondShop is an experimental feature. If any issues arise, please report them at https://github.com/WizarTheGreat/DiamondShop/issues");
+            }
         }
     }
     @EventHandler
+    public void onSignChange(SignChangeEvent e) {
+        Player player = e.getPlayer();
+        String[] lines = e.getLines();
+        getLogger().info("sign did change");
+
+        if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds")) && defaultMaxShops > 0) {
+            getLogger().info("sign format correct");
+            if (!lines[3].equalsIgnoreCase(player.getName())) {
+                e.setCancelled(true);
+                player.sendMessage("You cannot create a shop for someone else.");
+            } else if (Shops.containsKey(player.getName())) {
+                Integer value = Shops.get(player.getName());
+                //Running with Luckperms
+                if (lp && lpEnabled){
+                    getLogger().info("lp enabled");
+                    if (value == getGroupMax(player)) {
+                        e.setCancelled(true);
+                        player.sendMessage("You are already maxed out on shops!");
+                    } else {
+                        Shops.replace(player.getName(), value + 1);
+                        player.sendMessage("You are now at " + Shops.get(player.getName()) + "/" + getGroupMax(player) + " shops");
+                    }
+                    //Default run without Luckperms
+                }else {
+                    if (value == defaultMaxShops) {
+                        e.setCancelled(true);
+                        player.sendMessage("You are already maxed out on shops!");
+                    } else {
+                        Shops.replace(player.getName(), value + 1);
+                        player.sendMessage("You are now at " + Shops.get(player.getName()) + "/" + defaultMaxShops + " shops");
+                    }
+                }
+                }else if(lp && lpEnabled){
+                Shops.put(player.getName(), 1);
+                player.sendMessage("You are now at 1/" + getGroupMax(player) + " shops");
+            }else{
+                Shops.put(player.getName(), 1);
+                player.sendMessage("You are now at 1/" + defaultMaxShops + " shops");
+            }
+            }
+        }
+    @EventHandler
     public void onBreak(BlockBreakEvent e) {
+        Player player = e.getPlayer();
         Block block = e.getBlock();
         Material type = block.getBlockData().getMaterial();
-        if (type.toString().contains("SIGN") && MaxShops > 0) {
+        if (type.toString().contains("SIGN") && (defaultMaxShops > 0)) {
             Sign sign = (Sign) block.getState();
             String[] lines = sign.getLines();
             if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
                 if(Shops.containsKey(lines[3])){
                     Shops.replace(lines[3],Shops.get(lines[3]) - 1);
-                    if (e.getPlayer().getUniqueId() == Bukkit.getOfflinePlayer(lines[3]).getUniqueId()){
-                        e.getPlayer().sendMessage("You are now at " + Shops.get(e.getPlayer().getName()) + "/" + MaxShops + "shops");
-                    }
+                    if (player.getUniqueId() == Bukkit.getOfflinePlayer(lines[3]).getUniqueId()){
+                        if(lp && lpEnabled){
+                            player.sendMessage("You are now at " + Shops.get(player.getName()) + "/" + getGroupMax(player) + " shops");
+                        }
+                        else{
+                        player.sendMessage("You are now at " + Shops.get(player.getName()) + "/" + defaultMaxShops + " shops");
+                    }}
                 }
             }
         }
@@ -183,7 +262,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                                 e.setCancelled(true);
                             }
                         } else {
-                            player.sendMessage("You do not have enough diamonds in your hand!");
+                            player.sendMessage("§4You do not have enough diamonds in your hand!");
                             e.setCancelled(true);
                         }
                     }
@@ -195,7 +274,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                         }
                     }
                 } catch (NumberFormatException ex) {
-                    player.sendMessage("The sign format is incorrect!");
+                    player.sendMessage("§4The sign format is incorrect!");
                 }
             }
         } else if (type == (Material.CHEST)) {
@@ -207,7 +286,7 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                     String[] lines = sign.getLines();
                     if (lines[0].equalsIgnoreCase("Shop") && (lines[2].contains("Diamond") || lines[2].contains("Diamonds"))) {
                         if ((!(Objects.requireNonNull(Bukkit.getOfflinePlayer(lines[3])).getUniqueId() == Objects.requireNonNull(player.getUniqueId())))) {
-                            player.sendMessage("This isn't your shop!");
+                            player.sendMessage("§4This isn't your shop!");
                             e.setCancelled(true);
                         }
                     }
@@ -225,6 +304,11 @@ public final class DiamondShop extends JavaPlugin implements Listener {
     }
 
     private boolean replaceItemInChest(Sign sign, int number, Player player) {
+        boolean enough = false;
+        boolean open = false;
+        int stacks = 0;
+        int count = 0;
+        int openSlots = 0;
         BlockData blockData = sign.getBlockData();
         if (!(blockData instanceof Directional)) {
             return false;
@@ -242,14 +326,14 @@ public final class DiamondShop extends JavaPlugin implements Listener {
 
         String[] itemDetails = sign.getLine(1).split(" ");
         if (itemDetails.length < 2) {
-            player.sendMessage("Improper format! Need number then item.");
+            player.sendMessage("§4Improper format! Need number then item.");
             return false;
         }
 
         Material itemType = Material.getMaterial(itemDetails[1].toUpperCase());
         String itemName = itemDetails[1].toUpperCase();
         if (itemType == null && !(itemName.length() > 10)) {
-            player.sendMessage("This isn't a sellable item.");
+            player.sendMessage("§4This isn't a sellable item.");
             return false;
         }
 
@@ -312,16 +396,12 @@ public final class DiamondShop extends JavaPlugin implements Listener {
                     isThere = false;
                     return true;
                 } else {
-                    player.sendMessage("This shop is out of stock!");
+                    player.sendMessage("§4This shop is out of stock!");
                 }
 
-                open = false;
-                stacks = 0;
-                count = 0;
-                openSlots = 0;
                 return false;
             } else {
-                player.sendMessage("You don't have enough space.");
+                player.sendMessage("§4You don't have enough space.");
             }
             return false;
 

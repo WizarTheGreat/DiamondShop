@@ -1,3 +1,11 @@
 #Max amount of shops a player can have
 #Set to -1 to have infinite
 MaxShops: 20
+
+#Let this plugin use luckperms groups to decide MaxShops instead
+LuckPermsEnabled: false
+
+#List out the Luckperms group names, with the MaxShop number afterwards.
+Groups:
+  #Do not remove default
+  default: 20
