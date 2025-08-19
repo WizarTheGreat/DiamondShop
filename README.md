@@ -30,12 +30,13 @@ However, if you are an admin you can remove a player's shop by using /fill or a 
 <br/>
 ### ***-How do I use the max shops function?***
 To increase the max shop limit, go to the config.yml
-
+If you have LuckPerms installed, you can set the max shop limit by LuckPerms groups
 Set it to 0 to have infinite shops
 <br/>
 <br/>
 <br/>
 Please leave any issues here in the github!
+
 
 
 
