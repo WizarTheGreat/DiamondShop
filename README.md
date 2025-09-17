@@ -17,7 +17,7 @@ Shop
 <br/>
 <br/>
 ### ***-What if the items name doesn't fit on the sign?***
-If an item doesn't fit the name, put as much as you can and it will search for that.
+If an item name doesn't fit, put as much as you can and it will search for that.
 
 EX = Firework_Rock for Firework_Rocket
 <br/>
@@ -36,6 +36,7 @@ Set it to -1 to have infinite shops
 <br/>
 <br/>
 Please leave any issues here in the github!
+
 
 
 
